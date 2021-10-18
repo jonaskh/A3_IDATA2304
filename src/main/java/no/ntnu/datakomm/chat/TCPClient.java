@@ -33,7 +33,7 @@ public class TCPClient {
                 OutputStream out = connection.getOutputStream();
                 fromServer = new BufferedReader(new InputStreamReader(in, ENCODING));
                 out = new BufferedOutputStream(out);
-                toServer = new PrintWriter(new OutputStreamWriter(out, ENCODING));
+                toServer = new PrintWriter(connection.getOutputStream(), true);
                 success = true;
             } catch (IOException e) {
                 System.out.println("Failed to connect to server: " + host + ", Port: " + port);
@@ -167,11 +167,12 @@ public class TCPClient {
      * @return one line of text (one command) received from the server
      */
     private String waitServerResponse() {
-        String response = null;
+        String response= null;
 
         try {
             response = fromServer.readLine();
-        } catch (IOException e) {
+            }
+         catch (IOException e) {
             System.out.println("Failed to read server response...");
         }
         // TODO Step 3: Implement this method
