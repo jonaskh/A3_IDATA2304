@@ -410,7 +410,7 @@ public class GUIController implements ChatListener {
      */
     @Override
     public void onCommandError(String errMsg) {
-        // Shoe error message. Do it on the GUI thread.
+        // Show error message. Do it on the GUI thread.
         Platform.runLater(() -> {
             TextMessage msg = new TextMessage("err", false, "Error: " + errMsg);
             addMsgToGui(true, msg, true);

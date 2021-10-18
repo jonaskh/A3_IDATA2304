@@ -14,6 +14,8 @@ public class TCPClient {
     private String lastError = null;
 
     private final List<ChatListener> listeners = new LinkedList<>();
+    public static final int PORT = 1300;
+    public static final String HOST = "datakomm.work";
 
     /**
      * Connect to a chat server.
@@ -26,7 +28,22 @@ public class TCPClient {
         // TODO Step 1: implement this method
         // Hint: Remember to process all exceptions and return false on error
         // Hint: Remember to set up all the necessary input/output stream variables
-        return false;
+        System.out.println("Starting client...");
+        if (!isConnectionActive()) {
+        try {
+            //Establishes the output- and input -streams to the socket if connection is successful.
+                connection = new Socket(HOST, PORT);
+                System.out.println("Connection successful");
+                OutputStream output = connection.getOutputStream();
+                InputStream input = connection.getInputStream();
+                toServer = new PrintWriter(output, true);
+                fromServer = new BufferedReader(new InputStreamReader(input));
+                return true;
+            } catch(IOException e){
+                System.out.println("Connection failed");
+                return false;
+            }
+        } else { return false;}
     }
 
     /**
@@ -41,6 +58,20 @@ public class TCPClient {
     public synchronized void disconnect() {
         // TODO Step 4: implement this method
         // Hint: remember to check if connection is active
+        if (isConnectionActive()) {
+            try {
+                sendCommand("/cmd sync");
+                connection.close();
+                connection = null;
+                System.out.println("Successfully closed the connection.");
+                System.out.println(isConnectionActive());
+            } catch (IOException e) {
+                System.out.println("Connection is already closed.");
+            }
+        }
+        else {
+            System.out.println("No connection is active.");
+        }
     }
 
     /**
@@ -59,6 +90,21 @@ public class TCPClient {
     private boolean sendCommand(String cmd) {
         // TODO Step 2: Implement this method
         // Hint: Remember to check if connection is active
+
+        if (isConnectionActive()) {
+            String[] msgParts = cmd.split(" ");
+            System.out.println(msgParts);
+            if (msgParts.length == 2 && msgParts[0].equals("/cmd")) {
+                String keyword = msgParts[0];
+                String command = msgParts[1];
+                toServer.println(command);
+                return true;
+            } else {
+                System.out.println("Error");
+            }
+        }
+        else {
+            return false;}
         return false;
     }
 
