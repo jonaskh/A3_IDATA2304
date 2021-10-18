@@ -66,7 +66,6 @@ public class TCPClient {
                 System.out.println("Disconnection failed, no socket found...");
             }
         }
-
         // TODO Step 4: implement this method
         // Hint: remember to check if connection is active
     }
@@ -133,7 +132,6 @@ public class TCPClient {
      * clear your current user list and use events in the listener.
      */
     public void refreshUserList() {
-
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
