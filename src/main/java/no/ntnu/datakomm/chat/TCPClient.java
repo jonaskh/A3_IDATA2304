@@ -14,8 +14,8 @@ public class TCPClient {
     private String lastError = null;
 
     private final List<ChatListener> listeners = new LinkedList<>();
-    public static final int PORT = 1300;
-    public static final String HOST = "datakomm.work";
+
+    private final String ENCODING = "UTF-8";
 
     /**
      * Connect to a chat server.
@@ -25,26 +25,26 @@ public class TCPClient {
      * @return True on success, false otherwise
      */
     public boolean connect(String host, int port) {
+        boolean success = false;
+        if (!isConnectionActive()) {
+            try {
+                connection = new Socket(host, port);
+//                System.out.println("Successfully connected to server: " + host + ", Port: " + port);
+                InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                fromServer = new BufferedReader(reader);
+                toServer = new PrintWriter(connection.getOutputStream(),true);
+                success = true;
+            } catch (IOException e) {
+                System.out.println("Failed to connect to server: " + host + ", Port: " + port);
+                return success;
+            }
+        }
+        return success;
+    }
         // TODO Step 1: implement this method
         // Hint: Remember to process all exceptions and return false on error
         // Hint: Remember to set up all the necessary input/output stream variables
-        System.out.println("Starting client...");
-        if (!isConnectionActive()) {
-        try {
-            //Establishes the output- and input -streams to the socket if connection is successful.
-                connection = new Socket(HOST, PORT);
-                System.out.println("Connection successful");
-                OutputStream output = connection.getOutputStream();
-                InputStream input = connection.getInputStream();
-                toServer = new PrintWriter(output, true);
-                fromServer = new BufferedReader(new InputStreamReader(input));
-                return true;
-            } catch(IOException e){
-                System.out.println("Connection failed");
-                return false;
-            }
-        } else { return false;}
-    }
+
 
     /**
      * Close the socket. This method must be synchronized, because several
@@ -56,21 +56,15 @@ public class TCPClient {
      * that no two threads call this method in parallel.
      */
     public synchronized void disconnect() {
-        // TODO Step 4: implement this method
-        // Hint: remember to check if connection is active
         if (isConnectionActive()) {
             try {
-                sendCommand("/cmd sync");
+                sendCommand("sync");
                 connection.close();
                 connection = null;
-                System.out.println("Successfully closed the connection.");
-                System.out.println(isConnectionActive());
+//                System.out.println("Successfully disconnected");
             } catch (IOException e) {
-                System.out.println("Connection is already closed.");
+                System.out.println("Could not disconnect, no active socket found...");
             }
-        }
-        else {
-            System.out.println("No connection is active.");
         }
     }
 
@@ -88,25 +82,19 @@ public class TCPClient {
      * @return true on success, false otherwise
      */
     private boolean sendCommand(String cmd) {
+        boolean success = false;
+        if (isConnectionActive()) {
+            toServer.println("/cmd " + cmd);
+            success = true;
+        }
+        return success;
+    }
+
         // TODO Step 2: Implement this method
         // Hint: Remember to check if connection is active
 
-        if (isConnectionActive()) {
-            String[] msgParts = cmd.split(" ");
-            System.out.println(msgParts);
-            if (msgParts.length == 2 && msgParts[0].equals("/cmd")) {
-                String keyword = msgParts[0];
-                String command = msgParts[1];
-                toServer.println(command);
-                return true;
-            } else {
-                System.out.println("Error");
-            }
-        }
-        else {
-            return false;}
-        return false;
-    }
+
+
 
     /**
      * Send a public message to all the recipients.
@@ -115,11 +103,21 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
+        boolean success = false;
+        toServer.println("msg" + message + "\n");
+        System.out.println("Public Message Sent");
+ //       if(sendCommand("msg " + message)) {
+ //           success = true;
+ //       } else {
+ //           lastError = "Failed to send message";
+ //       }
+        return success;
+    }
+
         // TODO Step 2: implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-        return false;
-    }
+
 
     /**
      * Send a login request to the chat server.
@@ -127,6 +125,8 @@ public class TCPClient {
      * @param username Username to use
      */
     public void tryLogin(String username) {
+        toServer.println("login " + username + " \n");
+        System.out.println("Successfully logged in.");
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
     }
@@ -149,6 +149,8 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPrivateMessage(String recipient, String message) {
+        toServer.print("/privmsg " + recipient + " " + message + "\n");
+        System.out.println("Private Message sent");
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
@@ -171,12 +173,25 @@ public class TCPClient {
      * @return one line of text (one command) received from the server
      */
     private String waitServerResponse() {
+        String response = null;
+
+        while(isConnectionActive() == true) {
+            try {
+                response = fromServer.readLine();
+                System.out.println(response);
+            } catch (IOException e) {
+                System.out.println("Failed to read server response...");
+                lastError = response;
+
+            }
+        }
+        return response;
+    }
         // TODO Step 3: Implement this method
         // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
         // with the stream and hence the socket. Probably a good idea to close the socket in that case.
 
-        return null;
-    }
+
 
     /**
      * Get the last error message
@@ -207,7 +222,19 @@ public class TCPClient {
      * the connection is closed.
      */
     private void parseIncomingCommands() {
+        sendCommand("sync");
         while (isConnectionActive()) {
+            String message = waitServerResponse();
+            if (message != null) {
+                String splitMessage[] = message.split(" ");
+                String command = splitMessage[0];
+                switch (command) {
+                    case "login":
+                        tryLogin(splitMessage[1]);
+                        onLoginResult(true, "Login Successful");
+                        
+                }
+            }
             // TODO Step 3: Implement this method
             // Hint: Reuse waitServerResponse() method
             // Hint: Have a switch-case (or other way) to check what type of response is received from the server
