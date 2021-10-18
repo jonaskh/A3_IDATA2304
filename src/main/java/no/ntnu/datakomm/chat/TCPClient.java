@@ -232,7 +232,7 @@ public class TCPClient {
                     case "login":
                         tryLogin(splitMessage[1]);
                         onLoginResult(true, "Login Successful");
-                        
+
                 }
             }
             // TODO Step 3: Implement this method
