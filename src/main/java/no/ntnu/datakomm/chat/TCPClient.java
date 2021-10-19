@@ -84,7 +84,7 @@ public class TCPClient {
     private boolean sendCommand(String cmd) {
         boolean success = false;
         if (isConnectionActive()) {
-            toServer.println("/cmd " + cmd);
+            toServer.println(cmd);
             success = true;
             System.out.println("Command sent");
         }
@@ -123,7 +123,7 @@ public class TCPClient {
      */
     public void tryLogin(String username) {
         toServer.println("login " + username + " \n");
-        System.out.println("Successfully logged in.");
+        //System.out.println("Successfully logged in.");
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
     }
@@ -177,7 +177,7 @@ public class TCPClient {
                 System.out.println(response);
             } catch (IOException e) {
                 System.out.println("Failed to read server response...");
-                response = " ";
+                response = null;
             }
         }
         return response;
