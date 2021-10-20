@@ -2,6 +2,7 @@ package no.ntnu.datakomm.chat;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -225,7 +226,7 @@ public class TCPClient {
         while (isConnectionActive()) {
             String message = waitServerResponse();
             if (message != null) {
-                String splitMessage[] = message.split(" ");
+                String[] splitMessage = message.split(" ");
                 String command = splitMessage[0];
                 switch (command) {
                     case "loginok":
@@ -235,7 +236,11 @@ public class TCPClient {
                         onLoginResult(false,"login failed");
                         break;
                     case "users":
-                        onUsersList(waitServerResponse().split(" "));
+                        //Very inefficent, but only way I found to remove first index "users"
+                        List<String> listofUsers = new ArrayList<>(Arrays.asList(splitMessage));
+                        listofUsers.remove("users");
+                        splitMessage = listofUsers.toArray(new String[0]);
+                        onUsersList(splitMessage);
                         break;
                 }
 
