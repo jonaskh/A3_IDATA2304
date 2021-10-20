@@ -2,6 +2,7 @@ package no.ntnu.datakomm.chat;
 
 import java.io.*;
 import java.net.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -86,7 +87,6 @@ public class TCPClient {
         if (isConnectionActive()) {
             toServer.println(cmd);
             success = true;
-            System.out.println("Command sent");
         }
         return success;
     }
@@ -102,13 +102,8 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
-        if (isConnectionActive()) {
-            toServer.println("msg " + message);
-            System.out.println("Public Message Sent");
-            System.out.println(message);
+            sendCommand(message);
             return true;
-        }
-        return false;
     }
 
     // TODO Step 2: implement this method
@@ -122,7 +117,7 @@ public class TCPClient {
      * @param username Username to use
      */
     public void tryLogin(String username) {
-        toServer.println("login " + username + " \n");
+        sendCommand("login " + username);
         //System.out.println("Successfully logged in.");
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
@@ -136,6 +131,15 @@ public class TCPClient {
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
+        String [] userList;
+        userList = waitServerResponse().split(" ");
+        if (isConnectionActive()) {
+            sendCommand("users");
+            if (!waitServerResponse().isBlank() && userList[0].equals("users")) {
+                onUsersList(userList);
+            }
+            else { userList = null; }
+        }
     }
 
     /**
@@ -146,8 +150,7 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPrivateMessage(String recipient, String message) {
-        toServer.println("privmsg " + recipient + " " + message);
-        System.out.println("Private Message sent");
+        sendCommand("privmsg " + recipient + " " + message);
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
@@ -171,7 +174,7 @@ public class TCPClient {
      */
     private String waitServerResponse() {
         String response = null;
-        while (isConnectionActive() == true) {
+        if (isConnectionActive()) {
             try {
                 response = fromServer.readLine();
                 System.out.println(response);
@@ -217,11 +220,24 @@ public class TCPClient {
      */
     private void parseIncomingCommands() {
 //        sendCommand("sync");
+        String[] words;
+        words = waitServerResponse().split(" ");
         while (isConnectionActive()) {
             String message = waitServerResponse();
             if (message != null) {
                 String splitMessage[] = message.split(" ");
                 String command = splitMessage[0];
+                switch (command) {
+                    case "loginok":
+                        onLoginResult(true,"login successful");
+                        break;
+                    case "loginerr":
+                        onLoginResult(false,"login failed");
+                        break;
+                    case "users":
+                        onUsersList(waitServerResponse().split(" "));
+                        break;
+                }
 
             }
             // TODO Step 3: Implement this method
@@ -290,6 +306,9 @@ public class TCPClient {
     private void onDisconnect() {
         // TODO Step 4: Implement this method
         // Hint: all the onXXX() methods will be similar to onLoginResult()
+        for (ChatListener l : listeners) {
+            l.onDisconnect();
+        }
     }
 
     /**
@@ -299,6 +318,11 @@ public class TCPClient {
      */
     private void onUsersList(String[] users) {
         // TODO Step 5: Implement this method
+
+        for (ChatListener l : listeners) {
+            l.onUserList(users);
+        }
+
     }
 
     /**
