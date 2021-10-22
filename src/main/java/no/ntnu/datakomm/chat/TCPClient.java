@@ -149,7 +149,7 @@ public class TCPClient {
         if (response == null) {
             System.err.println("User list server response is null...");
         } else if(response.isBlank()) {
-            System.err.println("USer list server response is blank...");
+            System.err.println("User list server response is blank...");
         } else {
             userList = response.split(" ");
             if (isConnectionActive()) {
@@ -182,6 +182,9 @@ public class TCPClient {
      */
     public void askSupportedCommands() {
         // TODO Step 8: Implement this method
+        if (isConnectionActive()) {
+            sendCommand("help");
+        }
         // Hint: Reuse sendCommand() method
     }
 
@@ -196,7 +199,9 @@ public class TCPClient {
         if (isConnectionActive()) {
             try {
                 response = fromServer.readLine();
-                System.out.println(response);
+                if (response != "cmdrerr command not supported") {
+                    System.out.println(response);
+                }
             } catch (IOException e) {
                 System.err.println("Failed to read server response...");
             }
@@ -262,6 +267,12 @@ public class TCPClient {
                     case "privmsg":
                         onMsgReceived(true, splitMessage[1], splitMessage[2]);
                         break;
+                    case "supported" :
+                        List<String> listOfCommands = new ArrayList<>(Arrays.asList(message.split(" ")));
+                        listOfCommands.remove("supported");
+                        splitMessage = listOfCommands.toArray(new String[0]);
+                        onSupported(splitMessage);
+
                 }
             }
             // TODO Step 3: Implement this method
@@ -390,5 +401,9 @@ public class TCPClient {
      */
     private void onSupported(String[] commands) {
         // TODO Step 8: Implement this method
+
+        for (ChatListener l : listeners) {
+            l.onSupportedCommands(commands);
+        }
     }
 }

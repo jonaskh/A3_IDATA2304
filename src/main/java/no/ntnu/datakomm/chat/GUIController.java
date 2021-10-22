@@ -227,7 +227,7 @@ public class GUIController implements ChatListener {
                 // Connection established, start listening processes
                 tcpClient.addListener(this);
                 tcpClient.startListenThread();
-                startUserPolling();
+//                startUserPolling();
             }
             updateButtons(connected);
         });
@@ -277,38 +277,6 @@ public class GUIController implements ChatListener {
     /**
      * Start a new thread that will poll the server for currently active users
      */
-    private void startUserPolling() {
-        // Make sure we have just one polling thread, not duplicates
-        if (userPollThread == null) {
-
-            userPollThread = new Thread(() -> {
-                ////////////////////////////////////////////////////////////////
-                // This block of code will run in the polling thread
-                ////////////////////////////////////////////////////////////////
-                long threadId = Thread.currentThread().getId();
-                System.out.println("Started user polling in Thread "
-                        + threadId);
-                while (tcpClient.isConnectionActive()) {
-                    // TcpClient will ask server to send the latest user list. The response from the server will
-                    // not be handled here! Here we only ask for update and go to sleep. Then repeat.
-                    tcpClient.refreshUserList();
-                    try {
-                        sleep(3000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-                System.out.println("User polling thread " + threadId + " exiting...");
-                // Make sure we start the thread again next time
-                userPollThread = null;
-                ////////////////////////////////////////////////////////////////
-                // EOF polling thread code
-                ////////////////////////////////////////////////////////////////
-            });
-
-            userPollThread.start();
-        }
-    }
 
     /**
      * This method is called (by the TcpClient) when a login procedure is done: either it succeeded
