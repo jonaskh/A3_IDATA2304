@@ -144,16 +144,16 @@ public class TCPClient {
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
-        String [] userList;
-        String response = waitServerResponse();
-        if (response == null) {
-            System.err.println("User list server response is null...");
-        } else if(response.isBlank()) {
-            System.err.println("User list server response is blank...");
-        } else {
-            userList = response.split(" ");
-            if (isConnectionActive()) {
-                sendCommand("users");
+        while (isConnectionActive()) {
+            String[] userList;
+            sendCommand("users");
+            String response = waitServerResponse();
+            if (response == null) {
+                System.err.println("User list server response is null...");
+            } else if (response.isBlank()) {
+                System.err.println("User list server response is blank...");
+            } else {
+                userList = response.split(" ");
                 if (userList[0].equals("users")) {
                     onUsersList(userList);
                 }
