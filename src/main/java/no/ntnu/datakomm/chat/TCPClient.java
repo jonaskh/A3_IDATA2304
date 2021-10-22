@@ -37,7 +37,7 @@ public class TCPClient {
                 toServer = new PrintWriter(connection.getOutputStream(), true);
                 success = true;
             } catch (IOException e) {
-                System.out.println("Failed to connect to server: " + host + ", Port: " + port);
+                System.err.println("Failed to connect to server: " + host + ", Port: " + port);
                 success = false;
             }
         }
@@ -105,16 +105,17 @@ public class TCPClient {
     public boolean sendPublicMessage(String message) {
         boolean success = false;
         if (!(message == null) && !message.isBlank()) {
-            if (sendCommand("msg " + message)) {
+            if (sendCommand(message)) {
                 success = true;
             }
         }
         return success;
+        // TODO Step 2: implement this method
+        // Hint: Reuse sendCommand() method
+        // Hint: update lastError if you want to store the reason for the error.
     }
 
-    // TODO Step 2: implement this method
-    // Hint: Reuse sendCommand() method
-    // Hint: update lastError if you want to store the reason for the error.
+
 
 
     /**
@@ -255,8 +256,13 @@ public class TCPClient {
                         splitMessage = listOfUsers.toArray(new String[0]);
                         onUsersList(splitMessage);
                         break;
+                    case "msgok":
+                        onMsgReceived(false, splitMessage[1], splitMessage[2]);
+                        break;
+                    case "privmsg":
+                        onMsgReceived(true, splitMessage[1], splitMessage[2]);
+                        break;
                 }
-
             }
             // TODO Step 3: Implement this method
             // Hint: Reuse waitServerResponse() method
@@ -352,6 +358,10 @@ public class TCPClient {
      */
     private void onMsgReceived(boolean priv, String sender, String text) {
         // TODO Step 7: Implement this method
+        TextMessage message = new TextMessage(sender, priv, text);
+        for (ChatListener l : listeners) {
+            l.onMessageReceived(message);
+        }
     }
 
     /**
