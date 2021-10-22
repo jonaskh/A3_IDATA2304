@@ -144,20 +144,8 @@ public class TCPClient {
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
-        while (isConnectionActive()) {
-            String[] userList;
+        if (isConnectionActive()) {
             sendCommand("users");
-            String response = waitServerResponse();
-            if (response == null) {
-                System.err.println("User list server response is null...");
-            } else if (response.isBlank()) {
-                System.err.println("User list server response is blank...");
-            } else {
-                userList = response.split(" ");
-                if (userList[0].equals("users")) {
-                    onUsersList(userList);
-                }
-            }
         }
     }
 
@@ -169,7 +157,9 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPrivateMessage(String recipient, String message) {
-        sendCommand("privmsg " + recipient + " " + message);
+        if (isConnectionActive()) {
+            sendCommand("privmsg " + recipient + " " + message);
+        }
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
@@ -261,18 +251,18 @@ public class TCPClient {
                         splitMessage = listOfUsers.toArray(new String[0]);
                         onUsersList(splitMessage);
                         break;
-                    case "msgok":
-                        onMsgReceived(false, splitMessage[1], splitMessage[2]);
-                        break;
                     case "privmsg":
                         onMsgReceived(true, splitMessage[1], splitMessage[2]);
                         break;
+                    case "msg":
+                        onMsgReceived(false, splitMessage[1], splitMessage[2]);
+                        break;
+
                     case "supported" :
                         List<String> listOfCommands = new ArrayList<>(Arrays.asList(message.split(" ")));
                         listOfCommands.remove("supported");
                         splitMessage = listOfCommands.toArray(new String[0]);
                         onSupported(splitMessage);
-
                 }
             }
             // TODO Step 3: Implement this method
