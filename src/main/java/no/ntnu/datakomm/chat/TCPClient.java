@@ -103,8 +103,13 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
-            sendCommand(message);
-            return true;
+        boolean success = false;
+        if (!(message == null) && !message.isBlank()) {
+            if (sendCommand("msg " + message)) {
+                success = true;
+            }
+        }
+        return success;
     }
 
     // TODO Step 2: implement this method
@@ -118,7 +123,13 @@ public class TCPClient {
      * @param username Username to use
      */
     public void tryLogin(String username) {
-        sendCommand("login " + username);
+        if (username == null) {
+            System.err.println("Username cannot be null");
+        } else if (username.isBlank()) {
+            System.err.println("Username cannot be blank");
+        } else {
+            sendCommand("login " + username);
+        }
         //System.out.println("Successfully logged in.");
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
@@ -133,13 +144,19 @@ public class TCPClient {
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
         String [] userList;
-        userList = waitServerResponse().split(" ");
-        if (isConnectionActive()) {
-            sendCommand("users");
-            if (!waitServerResponse().isBlank() && userList[0].equals("users")) {
-                onUsersList(userList);
+        String response = waitServerResponse();
+        if (response == null) {
+            System.err.println("User list server response is null...");
+        } else if(response.isBlank()) {
+            System.err.println("USer list server response is blank...");
+        } else {
+            userList = response.split(" ");
+            if (isConnectionActive()) {
+                sendCommand("users");
+                if (userList[0].equals("users")) {
+                    onUsersList(userList);
+                }
             }
-            else { userList = null; }
         }
     }
 
@@ -180,8 +197,7 @@ public class TCPClient {
                 response = fromServer.readLine();
                 System.out.println(response);
             } catch (IOException e) {
-                System.out.println("Failed to read server response...");
-                response = null;
+                System.err.println("Failed to read server response...");
             }
         }
         return response;
@@ -220,9 +236,6 @@ public class TCPClient {
      * the connection is closed.
      */
     private void parseIncomingCommands() {
-//        sendCommand("sync");
-        String[] words;
-        words = waitServerResponse().split(" ");
         while (isConnectionActive()) {
             String message = waitServerResponse();
             if (message != null) {
@@ -236,10 +249,10 @@ public class TCPClient {
                         onLoginResult(false,"login failed");
                         break;
                     case "users":
-                        //Very inefficent, but only way I found to remove first index "users"
-                        List<String> listofUsers = new ArrayList<>(Arrays.asList(splitMessage));
-                        listofUsers.remove("users");
-                        splitMessage = listofUsers.toArray(new String[0]);
+                        //Very inefficient, but only way I found to remove first index "users"
+                        List<String> listOfUsers = new ArrayList<>(Arrays.asList(splitMessage));
+                        listOfUsers.remove("users");
+                        splitMessage = listOfUsers.toArray(new String[0]);
                         onUsersList(splitMessage);
                         break;
                 }
