@@ -333,6 +333,7 @@ public class GUIController implements ChatListener {
         });
     }
 
+
     /**
      * This method is called when an incoming text message is received
      *

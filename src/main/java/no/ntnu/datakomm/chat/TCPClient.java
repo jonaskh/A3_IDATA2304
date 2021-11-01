@@ -27,7 +27,6 @@ public class TCPClient {
      * @return True on success, false otherwise
      */
     public boolean connect(String host, int port) {
-        boolean success = false;
         if (!isConnectionActive()) {
             try {
                 connection = new Socket(host, port);
@@ -35,15 +34,13 @@ public class TCPClient {
                 InputStreamReader reader = new InputStreamReader(connection.getInputStream());
                 fromServer = new BufferedReader(reader);
                 toServer = new PrintWriter(connection.getOutputStream(), true);
-                success = true;
+                return true;
             } catch (IOException e) {
                 System.err.println("Failed to connect to server: " + host + ", Port: " + port);
-                success = false;
+                return false;
             }
-        }
-        return success;
+        } else { return false;}
     }
-    // TODO Step 1: implement this method
     // Hint: Remember to process all exceptions and return false on error
     // Hint: Remember to set up all the necessary input/output stream variables
 
@@ -84,15 +81,13 @@ public class TCPClient {
      * @return true on success, false otherwise
      */
     private boolean sendCommand(String cmd) {
-        boolean success = false;
-        if (isConnectionActive()) {
+        if (isConnectionActive() && !cmd.isEmpty() && !cmd.isBlank()) {
             toServer.println(cmd);
-            success = true;
+            return true;
         }
-        return success;
+        return false;
     }
 
-    // TODO Step 2: Implement this method
     // Hint: Remember to check if connection is active
 
 
@@ -103,20 +98,15 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
-        boolean success = false;
-        if (!(message == null) && !message.isBlank()) {
-            if (sendCommand(message)) {
-                success = true;
-            }
+        if (!message.isEmpty() && !message.isBlank()) {
+            sendCommand(message);
+            return true;
         }
-        return success;
+        return false;
+    }
         // TODO Step 2: implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-    }
-
-
-
 
     /**
      * Send a login request to the chat server.
@@ -189,9 +179,7 @@ public class TCPClient {
         if (isConnectionActive()) {
             try {
                 response = fromServer.readLine();
-                if (response != "cmdrerr command not supported") {
-                    System.out.println(response);
-                }
+                System.out.println(response);
             } catch (IOException e) {
                 System.err.println("Failed to read server response...");
             }
@@ -263,6 +251,13 @@ public class TCPClient {
                         listOfCommands.remove("supported");
                         splitMessage = listOfCommands.toArray(new String[0]);
                         onSupported(splitMessage);
+                        break;
+                    case "cmderr" :
+                        onCmdError(message);
+                        break;
+                    case "msgerr" :
+                        onMsgError(message);
+                        break;
                 }
             }
             // TODO Step 3: Implement this method
@@ -372,6 +367,9 @@ public class TCPClient {
      */
     private void onMsgError(String errMsg) {
         // TODO Step 7: Implement this method
+        for (ChatListener l : listeners) {
+            l.onMessageError(errMsg);
+        }
     }
 
     /**
@@ -381,6 +379,9 @@ public class TCPClient {
      */
     private void onCmdError(String errMsg) {
         // TODO Step 7: Implement this method
+        for (ChatListener l : listeners) {
+            l.onCommandError(errMsg);
+        }
     }
 
     /**
