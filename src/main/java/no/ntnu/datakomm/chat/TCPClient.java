@@ -12,12 +12,9 @@ public class TCPClient {
     private BufferedReader fromServer;
     private Socket connection;
 
-    // Hint: if you want to store a message for the last error, store it here
     private String lastError = null;
 
     private final List<ChatListener> listeners = new LinkedList<>();
-
-    private final String ENCODING = "UTF-8";
 
     /**
      * Connect to a chat server.
@@ -27,21 +24,19 @@ public class TCPClient {
      * @return True on success, false otherwise
      */
     public boolean connect(String host, int port) {
+        boolean success = false;
         if (!isConnectionActive()) {
             try {
                 connection = new Socket(host, port);
-//                System.out.println("Successfully connected to server: " + host + ", Port: " + port);
                 InputStreamReader reader = new InputStreamReader(connection.getInputStream());
                 fromServer = new BufferedReader(reader);
                 toServer = new PrintWriter(connection.getOutputStream(), true);
-                return true;
+                success = true;
             } catch (IOException e) {
                 System.err.println("Failed to connect to server: " + host + ", Port: " + port);
-                return false;
             }
-        } else {
-            return false;
         }
+        return success;
     }
     // Hint: Remember to process all exceptions and return false on error
     // Hint: Remember to set up all the necessary input/output stream variables
@@ -59,12 +54,11 @@ public class TCPClient {
     public synchronized void disconnect() {
         if (isConnectionActive()) {
             try {
-//                sendCommand("sync");
                 connection.close();
                 connection = null;
-//                System.out.println("Successfully disconnected");
+                onDisconnect();
             } catch (IOException e) {
-                System.out.println("Could not disconnect, no active socket found...");
+                System.err.println("Could not disconnect, no active socket found...");
             }
         }
     }
@@ -83,20 +77,19 @@ public class TCPClient {
      * @return true on success, false otherwise
      */
     private boolean sendCommand(String cmd) {
+        boolean success = false;
         if (isConnectionActive()) {
-            if (cmd.isEmpty() || cmd.isBlank()) {
-                return false;
+            if (cmd == null) {
+                System.err.println("Command cannot be null...");
+            } else if (cmd.isEmpty()) {
+                System.err.println("Command cannot be empty...");
             } else {
                 toServer.println(cmd);
-                return true;
+                success = true;
             }
-        } else {
-            return false;
         }
+        return success;
     }
-
-    // Hint: Remember to check if connection is active
-
 
     /**
      * Send a public message to all the recipients.
@@ -105,12 +98,18 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
+        boolean success = false;
 
-        sendCommand(message);
-        return true;
+        if (message == null) {
+            System.err.println("Public message cannot be null...");
+        } else if (message.isEmpty()) {
+            System.err.println("Public message cannot be empty...");
+        } else if (sendCommand(message)) {
+            success = true;
+        }
+
+        return success;
     }
-    // Hint: Reuse sendCommand() method
-    // Hint: update lastError if you want to store the reason for the error.
 
     /**
      * Send a login request to the chat server.
@@ -125,8 +124,6 @@ public class TCPClient {
         } else {
             sendCommand("login " + username);
         }
-        //System.out.println("Successfully logged in.");
-        // Hint: Reuse sendCommand() method
     }
 
     /**
@@ -134,8 +131,6 @@ public class TCPClient {
      * clear your current user list and use events in the listener.
      */
     public void refreshUserList() {
-        // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
-        // client and server exchange for user listing.
         if (isConnectionActive()) {
             sendCommand("users");
         }
@@ -149,12 +144,21 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPrivateMessage(String recipient, String message) {
+        boolean success = false;
         if (isConnectionActive()) {
-            sendCommand("privmsg " + recipient + " " + message);
+            if (recipient == null) {
+                System.err.println("Recipient cannot be null...");
+            } else if (recipient.isEmpty()) {
+                System.err.println("Recipient cannot be empty...");
+            } else if (message == null) {
+                System.err.println("Message cannot be null...");
+            } else if (message.isEmpty()) {
+                System.err.println("Message cannot be empty...");
+            } else if (sendCommand("privmsg " + recipient + " " + message)) {
+                success = true;
+            }
         }
-        // Hint: Reuse sendCommand() method
-        // Hint: update lastError if you want to store the reason for the error.
-        return false;
+        return success;
     }
 
 
@@ -254,6 +258,26 @@ public class TCPClient {
                     case "msgerr":
                         onMsgError(message);
                         break;
+                    case "modeok":
+                        // Do nothing?
+                        break;
+                    case "msgok":
+                        // DO nothing??
+                        break;
+                    case "joke":
+                        String messageToDisplay = "";
+                        for(int i = 1; i < splitMessage.length; i++) {
+                            if (i == splitMessage.length) {
+                                messageToDisplay += splitMessage[i];
+                            } else {
+                                messageToDisplay += splitMessage[i] + " ";
+                            }
+                        }
+                        onJoke(messageToDisplay);
+                        break;
+                    default:
+                        System.err.println("Could not understand response from server");
+                        break;
                 }
             }
             // Hint: Reuse waitServerResponse() method
@@ -270,7 +294,7 @@ public class TCPClient {
     /**
      * Register a new listener for events (login result, incoming message, etc)
      *
-     * @param listener
+     * @param listener The listener to be added
      */
     public void addListener(ChatListener listener) {
         if (!listeners.contains(listener)) {
@@ -281,7 +305,7 @@ public class TCPClient {
     /**
      * Unregister an event listener
      *
-     * @param listener
+     * @param listener The listener to be removed.
      */
     public void removeListener(ChatListener listener) {
         listeners.remove(listener);
@@ -374,6 +398,12 @@ public class TCPClient {
     private void onSupported(String[] commands) {
         for (ChatListener l : listeners) {
             l.onSupportedCommands(commands);
+        }
+    }
+
+    private void onJoke(String joke) {
+        for (ChatListener l: listeners) {
+            l.onJoke(joke);
         }
     }
 }

@@ -30,6 +30,11 @@ public class EmptyChatListener implements ChatListener {
     }
 
     @Override
+    public void onJoke(String joke) {
+
+    }
+
+    @Override
     public void onCommandError(String errMsg) {
     }
 

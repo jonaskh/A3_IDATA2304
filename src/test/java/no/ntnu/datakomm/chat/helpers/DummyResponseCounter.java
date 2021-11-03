@@ -55,5 +55,10 @@ public class DummyResponseCounter implements ChatListener {
     public void onDisconnect() {
         disconn++;
     }
+
+    @Override
+    public void onJoke(String joke) {
+
+    }
     
 }

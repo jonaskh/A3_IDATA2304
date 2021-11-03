@@ -98,13 +98,9 @@ public class GUIController implements ChatListener {
             loginInput.setText("");
         });
         textInput.setOnKeyPressed(event -> {
-            if (event.getCode().equals(KeyCode.ENTER) && event.isShiftDown()) {
-                // When Shift+"Enter" is pressed in the message input box: start a new line in the message
-                textInput.setText(textInput.getText() + "\n");
-                textInput.requestFocus();
-                textInput.end();
-            } else if (event.getCode().equals(KeyCode.ENTER)) {
-                // When "Enter" is pressed in the message input box: submit the message
+            if (event.getCode().equals(KeyCode.ENTER)) {
+                // When "Enter" is pressed in the message input box: cut the newlines and submit the message
+                trimTrailingNewlines();
                 inputSubmit();
                 event.consume(); // This is needed to disable beeping sound
             }
@@ -116,6 +112,17 @@ public class GUIController implements ChatListener {
         });
         // Mouse clicked on "Help" button
         helpBtn.setOnMouseClicked(event -> tcpClient.askSupportedCommands());
+    }
+
+    /**
+     * Remove any trailing newlines from the textInput field.
+     */
+    private void trimTrailingNewlines() {
+        String message = textInput.getText();
+        while (message.length() > 0 && message.charAt(message.length() - 1) == '\n') {
+            message = message.substring(0, message.length() - 1);
+        }
+        textInput.setText(message);
     }
 
     /**
@@ -154,7 +161,7 @@ public class GUIController implements ChatListener {
      * @param warning When true, this message is a warning that must be displayed to the user
      */
     private void addMsgToGui(boolean local, TextMessage msg, boolean warning) {
-        // Create GUI elements, set their text and style according to what 
+        // Create GUI elements, set their text and style according to what
         // type of message this is
 
         HBox message = new HBox();
@@ -256,7 +263,7 @@ public class GUIController implements ChatListener {
             // Update button texts
             serverStatus.setText(status);
             connectBtn.setText(connBtnText);
-            // Connection button was disabled while connection was in progress, 
+            // Connection button was disabled while connection was in progress,
             // now we enable it
             connectBtn.setDisable(false);
 
@@ -269,7 +276,7 @@ public class GUIController implements ChatListener {
     }
 
     ///////////////////////////////////////////////////////////////////////
-    // The methods below are called by the associated TcpClient (facade 
+    // The methods below are called by the associated TcpClient (facade
     // object) in another background thread when messages are received
     // from the server.
     ///////////////////////////////////////////////////////////////////////
@@ -277,7 +284,6 @@ public class GUIController implements ChatListener {
     /**
      * Start a new thread that will poll the server for currently active users
      */
-
     private void startUserPolling() {
         // Make sure we have just one polling thread, not duplicates
         if (userPollThread == null) {
@@ -332,7 +338,6 @@ public class GUIController implements ChatListener {
             }
         });
     }
-
 
     /**
      * This method is called when an incoming text message is received
@@ -412,7 +417,7 @@ public class GUIController implements ChatListener {
      */
     @Override
     public void onCommandError(String errMsg) {
-        // Show error message. Do it on the GUI thread.
+        // Shoe error message. Do it on the GUI thread.
         Platform.runLater(() -> {
             TextMessage msg = new TextMessage("err", false, "Error: " + errMsg);
             addMsgToGui(true, msg, true);
@@ -427,5 +432,18 @@ public class GUIController implements ChatListener {
     public void onDisconnect() {
         System.out.println("Socket closed by the remote end");
         updateButtons(false);
+    }
+
+    /**
+     * This method is called when server receives joke command.
+     *
+     * @param joke The joke to be displayed.
+     */
+    @Override
+    public void onJoke(String joke) {
+        Platform.runLater(() -> {
+            TextMessage msg = new TextMessage("joke", false, joke);
+            addMsgToGui(false, msg, false);
+        });
     }
 }
