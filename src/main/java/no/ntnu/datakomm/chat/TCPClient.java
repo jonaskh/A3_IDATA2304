@@ -7,6 +7,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Responsible for connecting to a server, and handling the server responses.
+ * Notifies event listeners.
+ */
 public class TCPClient {
     private PrintWriter toServer;
     private BufferedReader fromServer;
@@ -38,9 +42,6 @@ public class TCPClient {
         }
         return success;
     }
-    // Hint: Remember to process all exceptions and return false on error
-    // Hint: Remember to set up all the necessary input/output stream variables
-
 
     /**
      * Close the socket. This method must be synchronized, because several
@@ -169,7 +170,6 @@ public class TCPClient {
         if (isConnectionActive()) {
             sendCommand("help");
         }
-        // Hint: Reuse sendCommand() method
     }
 
 
@@ -267,11 +267,7 @@ public class TCPClient {
                     case "joke":
                         String messageToDisplay = "";
                         for(int i = 1; i < splitMessage.length; i++) {
-                            if (i == splitMessage.length) {
-                                messageToDisplay += splitMessage[i];
-                            } else {
-                                messageToDisplay += splitMessage[i] + " ";
-                            }
+                            messageToDisplay += splitMessage[i] + " ";
                         }
                         onJoke(messageToDisplay);
                         break;
@@ -280,14 +276,6 @@ public class TCPClient {
                         break;
                 }
             }
-            // Hint: Reuse waitServerResponse() method
-            // Hint: Have a switch-case (or other way) to check what type of response is received from the server
-            // and act on it.
-            // Hint: In Step 3 you need to handle only login-related responses.
-            // Hint: In Step 3 reuse onLoginResult() method
-
-            // Hint: In Step 5 reuse onUserList() method
-            // Hint for Step 7: call corresponding onXXX() methods which will notify all the listeners
         }
     }
 
@@ -310,12 +298,6 @@ public class TCPClient {
     public void removeListener(ChatListener listener) {
         listeners.remove(listener);
     }
-
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // The following methods are all event-notificators - notify all the listeners about a specific event.
-    // By "event" here we mean "information received from the chat server".
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Notify listeners that login operation is complete (either with success or
@@ -401,6 +383,11 @@ public class TCPClient {
         }
     }
 
+    /**
+     * Notify listeners that a joke response was received from the server
+     *
+     * @param joke The joke received from server
+     */
     private void onJoke(String joke) {
         for (ChatListener l: listeners) {
             l.onJoke(joke);
